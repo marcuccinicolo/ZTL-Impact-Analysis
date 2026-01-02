@@ -11,9 +11,9 @@ The analysis uses a **Difference-in-Differences** econometric approach to isolat
 
 
 ## 📈 Key Results
-- **Parallel Trends:** Validated through an Event-Study design (see `SCRIPTS/02_did_model.py`).
+- **Parallel Trends:** Validated through an Event-Study design (see `scripts/02_did_model.py`).
 - **Robustness:** Includes "Leave-one-out" analysis and "Placebo tests" to confirm the validity of the results.
 
 ## ⚙️ Execution
 1. Install dependencies: `pip install -r requirements.txt`
-2. Run the main model: `python SCRIPTS/02_did_model.py`
+2. Run the main model: `python scripts/02_did_model.py`
