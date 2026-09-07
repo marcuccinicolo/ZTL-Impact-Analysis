@@ -6,7 +6,17 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.lines import Line2D
 
+POLICY_YEAR = 2015
+
 df = pd.read_csv("data/dataset_pm10.csv")
+
+# Post is a pure time indicator: it must be 1 for EVERY city from the policy
+# year onwards, treated or not. Deriving it here rather than trusting the column
+# keeps Post and DiD from collapsing into the same variable — if Post were 1
+# only for treated cities after 2015 it would already BE the interaction, the
+# two regressors would be perfectly collinear, and OLS would silently split one
+# effect across two identical coefficients.
+df['Post'] = (df['Anno'] >= POLICY_YEAR).astype(int)
 
 # BASIC DID
 df['DiD'] = df['Treated'] * df['Post']
@@ -15,6 +25,23 @@ df['DiD'] = df['Treated'] * df['Post']
 model = smf.ols('PM10 ~ Treated + Post + DiD', data=df).fit()
 print("=== Basic DiD Regression ===")
 print(model.summary())
+
+# TWO-WAY FIXED EFFECTS
+# City fixed effects absorb time-invariant differences between cities, year
+# fixed effects absorb shocks common to all of them (weather, engine standards,
+# the 2020 lockdown). Errors are clustered by city because a city's PM10 is
+# correlated with itself over time. This is the headline estimate.
+fe_model = smf.ols(
+    'PM10 ~ DiD + C(Città) + C(Anno)', data=df
+).fit(cov_type='cluster', cov_kwds={'groups': df['Città']})
+
+ci_low, ci_high = fe_model.conf_int().loc['DiD']
+print("\n=== DiD with city and year fixed effects (clustered by city) ===")
+print(f"Effect of ZTL on PM10: {fe_model.params['DiD']:.3f} ug/m3 "
+      f"(se {fe_model.bse['DiD']:.3f}, p {fe_model.pvalues['DiD']:.4f}, "
+      f"95% CI [{ci_low:.2f}, {ci_high:.2f}])")
+print(f"Clusters: {df['Città'].nunique()} cities — few enough that these "
+      f"standard errors deserve caution.")
 
 # DYNAMIC DID 
 import numpy as np
